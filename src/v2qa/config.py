@@ -7,16 +7,65 @@ from utils.dict import CaseInsensitiveDict
 
 
 @dataclass
-class ActionConfig:
-    type: bool | str | int
+class PromptConfig:
     task: str
-    task_params: dict = field(default_factory=dict)
+    params: dict = field(default_factory=dict)
+
+@dataclass
+class FunctionConfig:
+    task: str
+    params: dict = field(default_factory=dict)
+
+@dataclass
+class ActionType:
+    prompt   :str = 'prompt'
+    function :str = 'function'
+
+@dataclass
+class ActionConfig:
+    type: Union[str, ActionType]
+    task: str
+    params: dict = field(default_factory=dict)
+
+    def __init__(
+        self,
+        type: Union[str, ActionType],
+        task: Union[str, dict, PromptConfig, FunctionConfig],
+        params: dict = field(default_factory=dict),
+        *,
+        prompt_dict: Dict[str, PromptConfig] = None,
+        function_dict: Dict[str, FunctionConfig] = None,
+    ):
+
+        base_task_config = {}
+
+        if prompt_dict and type == ActionType.prompt and task in prompt_dict:
+            base_task_config:PromptConfig = prompt_dict[task]
+
+        elif function_dict and type == ActionType.function and task in function_dict:
+            base_task_config:FunctionConfig = function_dict[task]
+
+        # # Dynamically initialize all fields
+        # init_args = locals()  # Get all local variables
+        # for field_name in ActionConfig.__dataclass_fields__:
+        #     if field_name in init_args:
+        #         setattr(self, field_name, init_args[field_name])
+
+        if base_task_config and isinstance(base_task_config, PromptConfig | FunctionConfig):
+            self.type = type
+            self.task = base_task_config.task
+            self.params = {**base_task_config.params, **params}
+
+        else:
+            self.type = type
+            self.task = task
+            self.params = params
 
 @dataclass
 class ConditionConfig:
     type: bool | str | int
     task: str
-    task_params: dict = field(default_factory=dict)
+    params: dict = field(default_factory=dict)
 
 @dataclass
 class FlowConfig:
@@ -122,11 +171,23 @@ class Configs:
     @classmethod
     def from_dict(cls, config: dict) -> 'Configs':
 
+        _name = 'prompts'
+        prompts = {_name: PromptConfig(**_config) for _name, _config in config[_name].items()}
+
+        # _name = 'functions'
+        # functions = {_name: FunctionConfig(**_config) for _name, _config in config[_name].items()}
+
         _name = 'actions'
-        actions = {_name: ActionConfig(**_config) for _name, _config in config[_name].items()}
+        actions = {
+            _name: ActionConfig(**_config, prompt_dict=prompts)#, function_dict=functions)
+            for _name, _config in config[_name].items()
+        }
 
         _name = 'conditions'
-        conditions = {_name: ConditionConfig(**_config) for _name, _config in config[_name].items()}
+        conditions = {
+            _name: ConditionConfig(**_config)#, prompt_dict=prompts)#, function_dict=functions)
+            for _name, _config in config[_name].items()
+        }
 
         _name = 'flows'
         flows = {_name: FlowConfig(

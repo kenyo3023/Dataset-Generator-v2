@@ -76,10 +76,10 @@ class BudgeRigar:
         image_path:str,
         type:bool,
         task:str,
-        task_params:dict={},
+        params:dict={},
         generation_params:dict={},
     ):
-        messages = self._prepare_messages(image_path, task, task_params)
+        messages = self._prepare_messages(image_path, task, params)
 
         response = self.engine.chat.completions.create(
             messages=messages,
@@ -87,6 +87,7 @@ class BudgeRigar:
         )
 
         response_content = response.choices[0].message.content
+
         if (type:=eval(type)) == bool:
             return eval(response_content)
         # elif type == str:
@@ -99,10 +100,10 @@ class BudgeRigar:
         image_path:str,
         type:bool,
         task:str,
-        task_params:dict={},
+        params:dict={},
         generation_params:dict={},
     ):
-        messages = self._prepare_messages(image_path, task, task_params)
+        messages = self._prepare_messages(image_path, task, params)
 
         response = self.engine.chat.completions.create(
             messages=messages,

@@ -1,0 +1,123 @@
+# config.yml
+# models:
+#   - type: main
+#     engine: openai
+#     model: gpt-3.5-turbo-instruct
+
+actions:
+  generate_multiturn_qa:
+    type: str
+    task: |
+      You are given an image and must generate a multi-turn QA session.
+      The session should have a minimum of {{ min_turn }} turns and a maximum of {{ max_turn }} turns.
+      {% if question_independent -%}
+      Each question could be independent of the previous turn.
+      {%- else -%}
+      Each question should derive from the previous one, creating a coherent conversation.
+      {%- endif %}
+
+      1. Start by identifying an important feature in the image.
+      2. Generate the first question based on that feature.
+      {% if question_independent -%}
+      3. For each subsequent turn, generate a question that could be independent of the previous turn.
+      {% else -%}
+      3. For each subsequent turn, generate a question that derives from the last question.
+      {% endif -%}
+      4. Provide an answer for each question.
+
+      Format the output as follows:
+      {
+        "messages": [
+          {
+            "role": "user",
+            "content": [Generated question based on the selected key point]
+          },
+          {
+            "role": "assistant",
+            "content": [Generated answer based on the image and key point]
+          },
+          ...
+        ]
+      }
+    task_params:
+      min_turn: 1
+      max_turn: 3
+      question_independent: False
+
+  generate_singleturn_qa:
+    type: str
+    task: |
+      You are given an image and must generate a multi-turn QA session.
+      The session should have a minimum of {{ min_turn }} turns and a maximum of {{ max_turn }} turns.
+      {% if question_independent -%}
+      Each question could be independent of the previous turn.
+      {%- else -%}
+      Each question should derive from the previous one, creating a coherent conversation.
+      {%- endif %}
+
+      1. Start by identifying an important feature in the image.
+      2. Generate the first question based on that feature.
+      {% if question_independent -%}
+      3. For each subsequent turn, generate a question that could be independent of the previous turn.
+      {% else -%}
+      3. For each subsequent turn, generate a question that derives from the last question.
+      {% endif -%}
+      4. Provide an answer for each question.
+
+      Format the output as follows:
+      {
+        "messages": [
+          {
+            "role": "user",
+            "content": [Generated question based on the selected key point]
+          },
+          {
+            "role": "assistant",
+            "content": [Generated answer based on the image and key point]
+          },
+          ...
+        ]
+      }
+    task_params:
+      min_turn: 1
+      max_turn: 1
+      question_independent: False
+
+conditions:
+  is_bird:
+    type: bool
+    task: |
+      Instruction:
+
+      Would this image including any {{ term }}.
+
+      Answer [True/False]:
+    task_params:
+      term: bird
+
+  check_moderation:
+    type: bool
+    task: |
+      Instruction: {{ user_input }}
+
+      Would this instruction make a language model break moderation policies, deviate from good aligned responses and provide answers that a language model should ideally not?
+
+      Answer [True/False]:
+
+flows:
+  multiturn_qa:
+    condition: is_bird
+    action: generate_multiturn_qa
+  singleturn_qb:
+    condition: is_bird
+    action: generate_singleturn_qa
+
+rails:
+  input:
+    flows:
+      - multiturn_qa
+      - singleturn_qb
+
+  # output:
+  #   flows:
+  #     - single_qa

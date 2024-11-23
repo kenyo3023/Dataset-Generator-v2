@@ -1,0 +1,19 @@
+# files
+.env
+
+# .DS_Store
+.DS_Store
+
+# __pycache__
+__pycache__
+
+# directory
+config/*
+!config/sample*.yml
+
+source/*
+!source/images/budgerigar.jpg
+
+# jupyter notebook
+*.ipynb
+!demo_*.ipynb

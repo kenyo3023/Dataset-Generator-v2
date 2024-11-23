@@ -1,0 +1,83 @@
+# config.yml
+# models:
+#   - type: main
+#     engine: openai
+#     model: gpt-3.5-turbo-instruct
+
+actions:
+  generate_multiturn_qa_based_on_the_test_paper:
+    type: str
+    task: |
+      You are given an image and must generate a multi-turn QA session {% if subject -%} based on the {{ subject }} {%- endif %} in language {{ language }}.
+      The session should have a minimum of {{ min_turn }} turns and a maximum of {{ max_turn }} turns.
+      {% if question_independent -%}
+      Each question could be independent of the previous turn.
+      {%- else -%}
+      Each question should derive from the previous one, creating a coherent conversation.
+      {%- endif %}
+
+      Instructions:
+      1. **Analyze the image:** Identify the questions present on the test paper.
+      2. **Generate the first turn:** Start by focusing on the most prominent or central question on the test paper.
+      3. **Subsequent turns:**  
+        {% if question_independent -%}
+        Generate each question independently by addressing different parts of the test paper.
+        {%- else -%}
+        Generate each question by logically continuing or diving deeper into the previous question.
+        {%- endif %}
+      4. **Answers:** Provide accurate answers based on the content of the test paper.
+
+      #### Example Adjustment for a Test Paper Image:  
+      1. Start by identifying a specific question, such as a math problem, multiple-choice question, or essay prompt.  
+      2. Focus on generating QA pairs that either explore the question, clarify it, or provide hints.  
+
+      Format the output as follows:
+      {
+        "messages": [
+          {
+            "role": "user",
+            "content": [Generated question based on the selected key point]
+          },
+          {
+            "role": "assistant",
+            "content": [Generated answer based on the image and key point]
+          },
+          ...
+        ]
+      }
+    task_params:
+      min_turn: 1
+      max_turn: 3
+      subject: Chemistry
+      language: zh-TW
+      question_independent: False
+
+conditions:
+  guess_subject:
+    type: str
+    task: |
+      Instruction:
+
+      Would this image contain any of the following subjects?
+
+      Answer [{{ options }}]:
+    task_params:
+      options: Chemistry/Biology/Physics/Earth Science
+
+flows:
+  qa:
+    condition: guess_subject
+    action:
+      Chemistry: generate_multiturn_qa_based_on_the_test_paper
+      Biology: generate_multiturn_qa_based_on_the_test_paper
+      Physics: generate_multiturn_qa_based_on_the_test_paper
+      Earth Science: generate_multiturn_qa_based_on_the_test_paper
+
+rails:
+  input:
+    flows:
+      - qa
+
+  # output:
+  #   flows:
+  #     - single_qa

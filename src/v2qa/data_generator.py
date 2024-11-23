@@ -76,10 +76,10 @@ class BudgeRigar:
         image_path:str,
         type:bool,
         task:str,
-        task_params:dict={},
+        params:dict={},
         generation_params:dict={},
     ):
-        messages = self._prepare_messages(image_path, task, task_params)
+        messages = self._prepare_messages(image_path, task, params)
 
         response = self.engine.chat.completions.create(
             messages=messages,
@@ -99,15 +99,17 @@ class BudgeRigar:
         image_path:str,
         type:bool,
         task:str,
-        task_params:dict={},
+        params:dict={},
         generation_params:dict={},
     ):
-        messages = self._prepare_messages(image_path, task, task_params)
+        messages = self._prepare_messages(image_path, task, params)
+        return messages
 
         response = self.engine.chat.completions.create(
             messages=messages,
             **generation_params,
         )
+        print(f'response.choices[0].message.content: {response.choices[0].message.content}')
         return self.parse_and_get_generated_messages(response.choices[0].message.content)
 
     def generate(

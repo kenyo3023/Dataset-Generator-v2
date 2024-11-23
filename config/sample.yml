@@ -39,7 +39,7 @@ actions:
           ...
         ]
       }
-    task_params:
+    params:
       min_turn: 1
       max_turn: 3
       question_independent: False
@@ -78,7 +78,7 @@ actions:
           ...
         ]
       }
-    task_params:
+    params:
       min_turn: 1
       max_turn: 1
       question_independent: False
@@ -92,7 +92,7 @@ conditions:
       Would this image including any {{ term }}.
 
       Answer [True/False]:
-    task_params:
+    params:
       term: bird
 
   check_moderation:

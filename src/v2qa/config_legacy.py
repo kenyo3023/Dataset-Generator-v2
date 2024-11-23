@@ -44,6 +44,36 @@ class ActionConfig:
             if field_name in init_args:
                 setattr(self, field_name, init_args[field_name])
 
+        if isinstance(self.task, dict):
+            assert len(self.task) == 1, "The dictionary \'task\' must contain exactly one key-value pair."
+
+            task_type, task = next(iter(self.task.items()))
+
+            if task_type == ActionType.prompt:
+                if prompt_dict is None or task not in prompt_dict:
+                    raise ValueError(f"Task '{task}' not found in prompts {list(prompt_dict)}.")
+                base_task_config:Union[PromptConfig, FunctionConfig] = prompt_dict[task]
+
+            elif task_type == ActionType.function:
+                if function_dict is None or task not in function_dict:
+                    raise ValueError(f"Task '{task}' not found in functions {list(function_dict)}.")
+                base_task_config:Union[PromptConfig, FunctionConfig] = function_dict[task]
+
+            else:
+                raise ValueError(
+                    f"Unsupported task type: {task_type}. Expected in {list(TaskType.__annotations__.keys())}."
+                )
+
+            task_config = replace(
+                base_task_config,
+                **{'type':self.type, 'task':self.task, 'params':self.params}
+            )
+
+        else:
+
+            base_task_config = None
+
+        return task_config
 
 
 @dataclass
@@ -165,7 +195,7 @@ class Configs:
 
         _name = 'actions'
         actions = {
-            _name: ActionConfig(**_config)#, prompt_dict=prompts)#, function_dict=functions)
+            _name: ActionConfig(**_config, prompt_dict=prompts)#, function_dict=functions)
             for _name, _config in config[_name].items()
         }
 

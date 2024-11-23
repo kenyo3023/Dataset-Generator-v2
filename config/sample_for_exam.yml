@@ -4,9 +4,8 @@
 #     engine: openai
 #     model: gpt-3.5-turbo-instruct
 
-actions:
-  generate_multiturn_qa_based_on_the_test_paper:
-    type: str
+prompts:
+  generate_multiturn_qa_for_test_paper:
     task: |
       You are given an image and must generate a multi-turn QA session {% if subject -%} based on the {{ subject }} {%- endif %} in language {{ language }}.
       The session should have a minimum of {{ min_turn }} turns and a maximum of {{ max_turn }} turns.
@@ -45,12 +44,19 @@ actions:
           ...
         ]
       }
-    task_params:
+    params:
       min_turn: 1
       max_turn: 3
-      subject: Chemistry
+      subject: null
       language: zh-TW
       question_independent: False
+
+actions:
+  generate_multiturn_qa_based_on_the_test_paper:
+    type: prompt
+    task: generate_multiturn_qa_for_test_paper
+    params:
+      subject: Chemistry
 
 conditions:
   guess_subject:
@@ -61,7 +67,7 @@ conditions:
       Would this image contain any of the following subjects?
 
       Answer [{{ options }}]:
-    task_params:
+    params:
       options: Chemistry/Biology/Physics/Earth Science
 
 flows:

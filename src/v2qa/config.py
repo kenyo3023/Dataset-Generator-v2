@@ -17,21 +17,21 @@ class FunctionConfig:
     params: dict = field(default_factory=dict)
 
 @dataclass
-class ActionType:
+class TaskType:
     prompt   :str = 'prompt'
     function :str = 'function'
 
 @dataclass
-class ActionConfig:
-    type: Union[str, ActionType]
+class TaskConfig:
+    type: Union[str, TaskType]
     task: str
     params: dict = field(default_factory=dict)
 
     def __init__(
         self,
-        type: Union[str, ActionType],
+        type: Union[str, TaskType],
         task: Union[str, dict, PromptConfig, FunctionConfig],
-        params: dict = field(default_factory=dict),
+        params: dict = field(default_factory={}),
         *,
         prompt_dict: Dict[str, PromptConfig] = None,
         function_dict: Dict[str, FunctionConfig] = None,
@@ -39,10 +39,10 @@ class ActionConfig:
 
         base_task_config = {}
 
-        if prompt_dict and type == ActionType.prompt and task in prompt_dict:
+        if prompt_dict and type == TaskType.prompt and task in prompt_dict:
             base_task_config:PromptConfig = prompt_dict[task]
 
-        elif function_dict and type == ActionType.function and task in function_dict:
+        elif function_dict and type == TaskType.function and task in function_dict:
             base_task_config:FunctionConfig = function_dict[task]
 
         # # Dynamically initialize all fields
@@ -62,10 +62,42 @@ class ActionConfig:
             self.params = params
 
 @dataclass
-class ConditionConfig:
-    type: bool | str | int
-    task: str
-    params: dict = field(default_factory=dict)
+class ActionConfig(TaskConfig):
+    def __init__(
+        self,
+        type: Union[str, TaskType],
+        task: str,
+        params: dict = {},
+        *,
+        prompt_dict: Dict[str, PromptConfig] = None,
+        function_dict: Dict[str, FunctionConfig] = None,
+    ):
+        super().__init__(
+            type=type,
+            task=task,
+            params=params,
+            prompt_dict=prompt_dict,
+            function_dict=function_dict
+        )
+
+@dataclass
+class ConditionConfig(TaskConfig):
+    def __init__(
+        self,
+        type: Union[str, TaskType],
+        task: str,
+        params: dict = {},
+        *,
+        prompt_dict: Dict[str, PromptConfig] = None,
+        function_dict: Dict[str, FunctionConfig] = None,
+    ):
+        super().__init__(
+            type=type,
+            task=task,
+            params=params,
+            prompt_dict=prompt_dict,
+            function_dict=function_dict
+        )
 
 @dataclass
 class FlowConfig:
@@ -157,6 +189,8 @@ class RailsConfig:
 
 @dataclass
 class Configs:
+    prompts: List[PromptConfig]
+    # functions: List[FunctionConfig]
     actions: List[ActionConfig]
     conditions: List[ConditionConfig]
     flows: List[FlowConfig]
@@ -185,7 +219,7 @@ class Configs:
 
         _name = 'conditions'
         conditions = {
-            _name: ConditionConfig(**_config)#, prompt_dict=prompts)#, function_dict=functions)
+            _name: ConditionConfig(**_config, prompt_dict=prompts)#, function_dict=functions)
             for _name, _config in config[_name].items()
         }
 
@@ -206,6 +240,8 @@ class Configs:
         )
 
         return cls(
+            prompts=prompts,
+            # functions=functions,
             actions=actions,
             conditions=conditions,
             flows=flows,

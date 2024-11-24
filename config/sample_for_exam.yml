@@ -51,6 +51,16 @@ prompts:
       language: zh-TW
       question_independent: False
 
+  guess_subject:
+    task: |
+      Instruction:
+
+      Would this image contain any of the following subjects?
+
+      Answer [{{ options }}]:
+    params:
+      options: Cat/Dog/Bird
+
 actions:
   generate_multiturn_qa_based_on_the_test_paper:
     type: prompt
@@ -64,13 +74,8 @@ actions:
 
 conditions:
   guess_subject:
-    type: str
-    task: |
-      Instruction:
-
-      Would this image contain any of the following subjects?
-
-      Answer [{{ options }}]:
+    type: prompt
+    task: guess_subject
     params:
       options: Chemistry/Biology/Physics/Earth Science
 

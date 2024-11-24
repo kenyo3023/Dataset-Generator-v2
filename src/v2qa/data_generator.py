@@ -88,12 +88,13 @@ class BudgeRigar:
 
         response_content = response.choices[0].message.content
 
-        if (type:=eval(type)) == bool:
-            return eval(response_content)
-        # elif type == str:
-        #     return type(response_content.lower())
-        else:
-            return type(response_content.strip())
+        # if (type:=eval(type)) == bool:
+        #     return eval(response_content)
+        # # elif type == str:
+        # #     return type(response_content.lower())
+        # else:
+        #     return type(response_content.strip())
+        return response_content.strip()
 
     def execute_action(
         self,

@@ -1,4 +1,5 @@
 import re
+import copy
 import json
 from jinja2 import Template
 from typing import Dict, List
@@ -15,6 +16,47 @@ class NoMatchingFlowError(Exception):
             f"No matching flow found for image: {image_path}. "
             f"Attempted flows: {', '.join(self.flows)}"
         )
+
+def update_params(_dict:dict, key:str=None, params_to_update:dict={}):
+    # Determine keys to update
+    key_to_update = [key] if _dict and key else list(_dict.keys())
+    for key in key_to_update:
+        _dict[key].params.update(params_to_update)
+
+def update_flow_task_params(_flows:dict, task:str, params:dict={}):
+    if not params:
+        return
+
+    for key, value in params.items():
+
+        # Case 1: Key exists in _flows
+        if key in _flows:
+
+            # If value is a nested dictionary
+            if isinstance(value, dict):
+                for _key, _value in value.items():
+
+                    if getattr(_flows[key], task) and _key in getattr(_flows[key], task):
+                        # Update params to specified task.params
+                        update_params(getattr(_flows[key], task), key=_key, params_to_update=_value)
+                    else:
+                        # Update params to all task.params
+                        update_params(getattr(_flows[key], task), params_to_update=value)
+
+        # Case 2: Key doesn't exist in _flows - update all flows
+        else:
+            for _key, _value in _flows.items():
+                if getattr(_flows[_key], task):
+                    update_params(getattr(_flows[_key], task), params_to_update={key:value})
+
+def update_flow_params(
+    _flows:dict,
+    action_params:dict={},
+    condition_params:dict={},
+):
+    update_flow_task_params(_flows, 'action', action_params)
+    update_flow_task_params(_flows, 'condition', condition_params)
+
 
 class RailFlow:
 
@@ -129,10 +171,18 @@ class RailFlow:
         self,
         flows:Dict[str, List[FlowConfig]],
         generation_params:dict={},
-        prompt_params:dict={},
+        action_params:dict={},
+        condition_params:dict={},
         image_path:str=None,
     ):
-        for _, flow in flows.items():
+        _flows = copy.deepcopy(flows)
+        update_flow_params(
+            _flows,
+            action_params=action_params,
+            condition_params=condition_params
+        )
+
+        for _, flow in _flows.items():
 
             if _condition:=flow.condition:
                 _condition_response = self.execute_condition(
@@ -150,4 +200,4 @@ class RailFlow:
                 generation_params=generation_params,
                 image_path=image_path,
             )
-        raise NoMatchingFlowError(image_path, flows)
+        raise NoMatchingFlowError(image_path, _flows)

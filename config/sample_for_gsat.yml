@@ -1,0 +1,228 @@
+# config.yml
+# models:
+#   - type: main
+#     engine: openai
+#     model: gpt-3.5-turbo-instruct
+
+prompts:
+  # generate_multi_choice_question_randomly:
+  #   task: |
+  #     # GSAT English Multiple-Choice Question Generation Instructions
+
+  #     ## Objective
+  #     Create high-quality English multiple-choice questions that assess linguistic comprehension, vocabulary knowledge, and contextual application skills.
+
+  #     ## Question Requirements
+  #     1. Question Type: Single-choice multiple-choice question (4 options)
+  #     2. Difficulty Level: High school / College entrance exam standard
+  #     3. Assessment Focus: Semantic understanding, vocabulary selection, contextual application
+
+  #     ## Question Structure
+  #     - A complete sentence with one blank space to be filled with the most appropriate word
+  #     - Context must be natural and coherent
+  #     - Only one correct answer among four options
+
+  #     ## Option Design Principles
+  #     - Options should have similar difficulty levels
+  #     - Include words that are easily confused
+  #     - Avoid obviously illogical choices
+  #     - Correct answer must depend on contextual understanding
+
+  #     ## Question Types
+  #     1. Vocabulary selection
+  #     2. Semantic comprehension
+  #     3. Grammatical application
+
+  #     ## Output Format
+  #     ```
+  #     Full sentence with ______ indicating the blank. (A) Option 1 (B) Option 2 (C) Option 3 (D) Option 4
+  #     ```
+
+  #     ## Scoring Criteria
+  #     - Logical coherence: 30%
+  #     - Vocabulary complexity: 25%
+  #     - Contextual naturalness: 25%
+  #     - Option design quality: 20%
+
+  #     ## Example Questions
+  #     ### Example 1
+  #     People who desire a ______ figure should exercise regularly and maintain healthy eating habits. 
+  #     (A) spicy (B) slender (C) slight (D) slippery
+
+  #     ### Example 2
+  #     Watching the sun ______ from a sea of clouds is a must-do activity for all visitors to Ali Mountain. 
+  #     (A) emerging (B) flashing (C) rushing (D) floating
+
+  #     ## Prohibited Elements
+  #     - Avoid using obscure or overly complex vocabulary
+  #     - Do not include questions with obvious gender, racial, or cultural biases
+  #     - Refrain from using extremely simple or excessively difficult words
+
+  #     ## Additional Guidelines
+  #     - Questions should have educational value
+  #     - Encourage diverse themes: daily life, nature, science, culture, etc.
+  #     - Ensure questions are challenging yet solvable
+  #     - Create contexts that require critical thinking
+  #     - Use sophisticated but accessible language
+
+  #     ## Best Practices
+  #     - Ensure grammatical correctness
+  #     - Provide clear, unambiguous context
+  #     - Make distractors plausible but incorrect
+  #     - Test deep vocabulary understanding, not just surface-level recognition
+
+  generate_multi_choice_question:
+    task: |
+      # GSAT English Multiple-Choice Question Generation Instructions
+
+      ## Advanced Vocabulary-Driven Question Generation
+
+      ### Input Parameters
+      - `ground_truth_vocab`: The target vocabulary word that is the correct answer
+      - `candidate_vocabs`: A list of alternative vocabulary words to be used as distractors
+      - `context_constraints` (optional): Additional context or thematic requirements
+
+      ### Input Format
+      - ground_truth_vocab: [target word]
+      - candidate_vocabs: [list of alternative words]
+      - context_constraints: [optional context requirements]
+
+      ## Vocabulary Selection Process
+      1. Use `ground_truth_vocab` as the definitive correct answer
+      2. Evaluate `candidate_vocabs` for potential distractors
+      3. If insufficient `candidate_vocabs` are provided, generate additional plausible alternatives
+
+      ### Vocabulary Matching Criteria
+      - Semantic similarity to ground truth
+      - Grammatical compatibility
+      - Potential for confusion
+      - Contextual plausibility
+
+      ## Output Format
+      Output always provide in this exact format:
+      ```json
+      {
+        "question": Sentence with ______ blank,
+        "options": {
+          "A": Option1,
+          "B": Option2,
+          "C": Option3,
+          "D": Option4,
+        },
+        "answer": [ground_truth_vocab]
+      }
+      ```
+
+      ## Example Usage
+
+      ### Example 1: Basic Usage
+      Input:
+      ```
+      - ground_truth_vocab: slender
+      - candidate_vocabs: spicy, slight, slippery
+      Output:
+      ```json
+      {
+        "question": "People who desire a ______ figure should exercise regularly and maintain healthy eating habits.",
+        "options": {
+          "A": "spicy",
+          "B": "slender",
+          "C": "slight",
+          "D": "slippery",
+        },
+        "answer": "slender"
+      }
+      ```
+
+      ### Example 2: With Context Constraints
+      Input:
+      ```
+      - ground_truth_vocab: emerging
+      - candidate_vocabs: flashing, rushing, floating
+      - context_constraints: "Scenic mountain view at sunrise"
+      ```
+      Output:
+      ```json
+      {
+        "question": "Watching the sun ______ from a sea of clouds is a must-do activity for all visitors to Ali Mountain.",
+        "options": {
+          "A": "emerging",
+          "B": "flashing",
+          "C": "rushing",
+          "D": "floating",
+        },
+        "answer": "emerging"
+      }
+      ```
+
+      ## Advanced Features
+      - Automatic semantic evaluation of candidates
+      - Difficulty level adjustment
+      - Contextual coherence check
+      - Grammar and syntax verification
+
+      ## Candidate Vocabulary Selection Rules
+      1. Minimum of 3 alternative words
+      2. Words should be:
+        - Close in part of speech
+        - Similar semantic complexity
+        - Potentially confusing
+        - Grammatically compatible
+
+      ## Scoring Mechanism
+      - Semantic Distance: How close alternatives are to ground truth
+      - Contextual Fit: How well words integrate into the sentence
+      - Distractor Quality: Plausibility of incorrect options
+
+      ## Question
+      Input:
+      ```
+      - ground_truth_vocab: {{ target_vocab }}
+      - candidate_vocabs: {{ candidate_vocabs }}
+      Output:
+      ```json
+    params:
+      target_vocab: brother
+      candidate_vocabs: buckle, mamamiya, bkuku, fuckyou
+
+  # flag:
+  #   task: |
+  #     Instruction:
+
+  #     Say True
+
+  #     Answer [{{ options }}]:
+  #   params:
+  #     options: 'True'
+
+actions:
+  generate_multi_choice_question:
+    type: prompt
+    task: generate_multi_choice_question
+    # params:
+    #   min_turn: 1
+    #   max_turn: 3
+    #   subject: Chemistry
+    #   language: zh-TW
+    #   question_independent: False
+
+# conditions:
+#   flag:
+#     type: prompt
+#     task: flag
+    # params:
+    #   options: True
+
+flows:
+  qa:
+    # condition: flag
+    action: generate_multi_choice_question
+
+rails:
+  input:
+    flows:
+      - qa
+
+  # output:
+  #   flows:
+  #     - single_qa

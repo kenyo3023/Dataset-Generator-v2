@@ -6,6 +6,8 @@ from typing import Dict, List, Union
 from utils.dict import CaseInsensitiveDict
 
 
+DEFAULT_CONDITION = 'True'
+
 @dataclass
 class PromptConfig:
     task: str
@@ -101,13 +103,13 @@ class ConditionConfig(TaskConfig):
 
 @dataclass
 class FlowConfig:
-    action: Union[ActionConfig, List[ActionConfig]]
-    condition: Union[ConditionConfig, List[ConditionConfig]]
+    action: Union[ActionConfig, List[ActionConfig]] = None
+    condition: Union[ConditionConfig, List[ConditionConfig]] = None
 
     def __init__(
         self,
-        action: Union[ActionConfig, List[ActionConfig]],
-        condition: Union[ConditionConfig, List[ConditionConfig]],
+        action: Union[ActionConfig, List[ActionConfig]] = None,
+        condition: Union[ConditionConfig, List[ConditionConfig]] = None,
         *,
         action_dict: Dict[str, ActionConfig] = None,
         condition_dict: Dict[str, ConditionConfig] = None,
@@ -115,7 +117,7 @@ class FlowConfig:
         # if isinstance(action, str):
         #     self.action = action_dict[action] if action_dict else action
         if isinstance(action, str):
-            self.action = CaseInsensitiveDict({True: action_dict[action]})
+            self.action = CaseInsensitiveDict({DEFAULT_CONDITION: action_dict[action]})
         else:
             # Handle the mapping case where action is a dictionary
             self.action = CaseInsensitiveDict({
@@ -134,13 +136,13 @@ class RailOutputConfig:
     flows: List[FlowConfig] = field(default_factory=list)
 
 @dataclass
-class RailsConfig:
+class RailConfig:
     input  : RailInputConfig = field(default_factory=RailInputConfig)
     output : RailOutputConfig = field(default_factory=RailOutputConfig)
     name   : str = 'rails'
 
     @classmethod
-    def from_yaml(cls, yaml_path: Union[str, Path]) -> 'RailsConfig':
+    def from_yaml(cls, yaml_path: Union[str, Path]) -> 'RailConfig':
         with open(yaml_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
 
@@ -156,7 +158,7 @@ class RailsConfig:
         action_dict: Dict[str, ActionConfig] = None,
         condition_dict: Dict[str, ConditionConfig] = None,
         flow_dict: List[FlowConfig] = None,
-    ) -> 'RailsConfig':
+    ) -> 'RailConfig':
 
         process_flows = lambda flows, flow_dict, action_dict, condition_dict: {
             (key := flow) if isinstance(flow, str) else next(iter(flow.keys())): 
@@ -188,51 +190,54 @@ class RailsConfig:
         )
 
 @dataclass
-class Configs:
+class RailFlowConfig:
     prompts: List[PromptConfig]
     # functions: List[FunctionConfig]
     actions: List[ActionConfig]
     conditions: List[ConditionConfig]
     flows: List[FlowConfig]
-    rails: RailsConfig
+    rails: RailConfig
 
     @classmethod
-    def from_yaml(cls, yaml_path: Union[str, Path]) -> 'Configs':
+    def from_yaml(cls, yaml_path: Union[str, Path]) -> 'RailFlowConfig':
         with open(yaml_path, 'r', encoding='utf-8') as f:
             config_dict = yaml.safe_load(f)
         return cls.from_dict(config_dict)
 
     @classmethod
-    def from_dict(cls, config: dict) -> 'Configs':
+    def from_dict(cls, config: dict) -> 'RailFlowConfig':
 
         _name = 'prompts'
-        prompts = {_name: PromptConfig(**_config) for _name, _config in config[_name].items()}
+        prompts = {_name: PromptConfig(**_config) for _name, _config in config[_name].items()} \
+            if config.get(_name) else {}
 
         # _name = 'functions'
-        # functions = {_name: FunctionConfig(**_config) for _name, _config in config[_name].items()}
+        # functions = {_name: FunctionConfig(**_config) for _name, _config in config[_name].items()} \
+        #     if config.get(_name) else {}
 
         _name = 'actions'
         actions = {
             _name: ActionConfig(**_config, prompt_dict=prompts)#, function_dict=functions)
             for _name, _config in config[_name].items()
-        }
+        } if config.get(_name) else {}
 
         _name = 'conditions'
         conditions = {
             _name: ConditionConfig(**_config, prompt_dict=prompts)#, function_dict=functions)
             for _name, _config in config[_name].items()
-        }
+        } if config.get(_name) else {}
 
         _name = 'flows'
-        flows = {_name: FlowConfig(
-            **_config,
-            action_dict=actions,
-            condition_dict=conditions,
-        )
-        for _name, _config in config[_name].items()}
+        flows = {
+            _name: FlowConfig(
+                **_config,
+                action_dict=actions,
+                condition_dict=conditions,
+            ) for _name, _config in config[_name].items()
+        }
 
         _name = 'rails'
-        rails = RailsConfig.from_dict(
+        rails = RailConfig.from_dict(
             config[_name],
             action_dict=actions,
             condition_dict=conditions,

@@ -3,7 +3,7 @@ import json
 from jinja2 import Template
 from typing import Dict, List
 
-from v2qa.config import *
+from .config import *
 from utils.image_process import encode_image
 
 
@@ -16,18 +16,18 @@ class NoMatchingFlowError(Exception):
             f"Attempted flows: {', '.join(self.flows)}"
         )
 
-class BudgeRigar:
+class RailFlow:
 
     def __init__(self, engine=None):
         self.engine = engine
 
     def _prepare_messages(
         self,
-        image_path:str,
         prompt_template:str,
         prompt_params:dict={},
+        image_path:str=None,
     ):
-        image_url = encode_image(image_path)
+        # image_url = encode_image(image_path)
 
         messages = [
             {
@@ -37,12 +37,16 @@ class BudgeRigar:
                         "type": "text",
                         "text": Template(prompt_template).render(**prompt_params),
                     },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                        "url": image_url,
-                        },
-                    },
+                    *(
+                        [
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": encode_image(image_path),
+                                },
+                            }
+                        ] if image_path else []
+                    ),
                 ],
             }
         ]
@@ -73,13 +77,17 @@ class BudgeRigar:
 
     def execute_condition(
         self,
-        image_path:str,
         type:bool,
         task:str,
         params:dict={},
         generation_params:dict={},
+        image_path:str=None,
     ):
-        messages = self._prepare_messages(image_path, task, params)
+        messages = self._prepare_messages(
+            prompt_template=task,
+            prompt_params=params,
+            image_path=image_path,
+        )
 
         response = self.engine.chat.completions.create(
             messages=messages,
@@ -98,39 +106,48 @@ class BudgeRigar:
 
     def execute_action(
         self,
-        image_path:str,
         type:bool,
         task:str,
         params:dict={},
         generation_params:dict={},
+        image_path:str=None,
     ):
-        messages = self._prepare_messages(image_path, task, params)
+        messages = self._prepare_messages(
+            prompt_template=task,
+            prompt_params=params,
+            image_path=image_path,
+        )
 
         response = self.engine.chat.completions.create(
             messages=messages,
             **generation_params,
         )
-        return self.parse_and_get_generated_messages(response.choices[0].message.content)
+        # return self.parse_and_get_generated_messages(response.choices[0].message.content)
+        return response.choices[0].message.content
 
     def generate(
         self,
-        image_path:str,
         flows:Dict[str, List[FlowConfig]],
         generation_params:dict={},
+        prompt_params:dict={},
+        image_path:str=None,
     ):
         for _, flow in flows.items():
 
-            _config = flow.condition
-            if _cond_response:= self.execute_condition(
-                image_path,
-                **_config.__dict__,
-                generation_params=generation_params,
-            ):
-                _config = flow.action
-                _action = _config[_cond_response]
-                return self.execute_action(
-                    image_path,
-                    **_action.__dict__,
+            if _condition:=flow.condition:
+                _condition_response = self.execute_condition(
+                    **_condition.__dict__,
                     generation_params=generation_params,
+                    image_path=image_path,
                 )
+                _action = flow.action
+                _selected_action = _action[_condition_response]
+            else:
+                _action = flow.action
+                _selected_action = _action[DEFAULT_CONDITION]
+            return self.execute_action(
+                **_selected_action.__dict__,
+                generation_params=generation_params,
+                image_path=image_path,
+            )
         raise NoMatchingFlowError(image_path, flows)

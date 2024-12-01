@@ -1,6 +1,7 @@
 import re
 import copy
 import json
+import importlib
 from jinja2 import Template
 from typing import Dict, List
 
@@ -94,33 +95,33 @@ class RailFlow:
         ]
         return messages
 
-    def parse_and_get_generated_messages(self, content:str):
-        """Parses the input content to extract generated messages.
+    # def parse_and_get_generated_messages(self, content:str):
+    #     """Parses the input content to extract generated messages.
 
-        Args:
-            content (str): The content containing the JSON messages.
+    #     Args:
+    #         content (str): The content containing the JSON messages.
 
-        Returns:
-            list: A list of messages extracted from the content if successful; otherwise, None.
-        """
-        pattern = r'.*?"messages":\s*(\[[^]]*\]).*?'
-        match = re.search(pattern, content, re.DOTALL)
+    #     Returns:
+    #         list: A list of messages extracted from the content if successful; otherwise, None.
+    #     """
+    #     pattern = r'.*?"messages":\s*(\[[^]]*\]).*?'
+    #     match = re.search(pattern, content, re.DOTALL)
 
-        if match:
-            try:
-                json_str = match.group(1)
-                messages = json.loads(json_str)
-                return messages
-            except Exception as e:
-                return None # TODO
-        else:
-            print("No match found.")
-            return None # TODO
+    #     if match:
+    #         try:
+    #             json_str = match.group(1)
+    #             messages = json.loads(json_str)
+    #             return messages
+    #         except Exception as e:
+    #             return None # TODO
+    #     else:
+    #         print("No match found.")
+    #         return None # TODO
 
-    def execute_condition(
+    def execute_prompt_task(
         self,
-        type:bool,
         task:str,
+        source:str=None,
         params:dict={},
         generation_params:dict={},
         image_path:str=None,
@@ -135,37 +136,47 @@ class RailFlow:
             messages=messages,
             **generation_params,
         )
-
-        response_content = response.choices[0].message.content
-
-        # if (type:=eval(type)) == bool:
-        #     return eval(response_content)
-        # # elif type == str:
-        # #     return type(response_content.lower())
-        # else:
-        #     return type(response_content.strip())
-        return response_content.strip()
-
-    def execute_action(
-        self,
-        type:bool,
-        task:str,
-        params:dict={},
-        generation_params:dict={},
-        image_path:str=None,
-    ):
-        messages = self._prepare_messages(
-            prompt_template=task,
-            prompt_params=params,
-            image_path=image_path,
-        )
-
-        response = self.engine.chat.completions.create(
-            messages=messages,
-            **generation_params,
-        )
-        # return self.parse_and_get_generated_messages(response.choices[0].message.content)
         return response.choices[0].message.content
+
+    def execute_function_task(
+        self,
+        task:str,
+        source:str=None,
+        params:dict={},
+        generation_params:dict={},
+        image_path:str=None,
+    ):
+        if source:
+            source = source.replace('/', '.')
+            module = importlib.import_module(source)
+            function = getattr(module, task)
+            if not function:
+                raise ValueError(
+                    f"Function '{task}' not found in module '{source}'.",
+                    "Please ensure the function exists."
+                )
+        else:
+            function = globals().get(task, None)
+            if not function:
+                raise ValueError(
+                    f"Function '{task}' not found in global scope or module '{source}'.",
+                    "Please ensure the function exists."
+                )
+        return function(**params)
+
+    def execute_condition(self, type:TaskType, **kwargs):
+        if type == TaskType.prompt:
+            return self.execute_prompt_task(**kwargs)
+        elif type == TaskType.function:
+            return self.execute_function_task(**kwargs)
+        return ValueError(f"Invalid TaskType: {type}. Expected in {TaskType.__annotations__}.")
+
+    def execute_action(self, type:TaskType, **kwargs):
+        if type == TaskType.prompt:
+            return self.execute_prompt_task(**kwargs)
+        elif type == TaskType.function:
+            return self.execute_function_task(**kwargs)
+        return ValueError(f"Invalid TaskType: {type}. Expected in {TaskType.__annotations__}.")
 
     def generate(
         self,

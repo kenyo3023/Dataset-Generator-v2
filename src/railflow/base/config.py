@@ -35,6 +35,7 @@ class TaskConfig:
         self,
         type: Union[str, TaskType],
         task: Union[str, dict, PromptConfig, FunctionConfig],
+        source: str = None,
         params: dict = field(default_factory={}),
         *,
         prompt_dict: Dict[str, PromptConfig] = None,
@@ -58,11 +59,13 @@ class TaskConfig:
         if base_task_config and isinstance(base_task_config, PromptConfig | FunctionConfig):
             self.type = type
             self.task = base_task_config.task
+            self.source = base_task_config.source
             self.params = {**base_task_config.params, **params}
 
         else:
             self.type = type
             self.task = task
+            self.source = source
             self.params = params
 
 @dataclass
@@ -71,6 +74,7 @@ class ActionConfig(TaskConfig):
         self,
         type: Union[str, TaskType],
         task: str,
+        source: str = None,
         params: dict = {},
         *,
         prompt_dict: Dict[str, PromptConfig] = None,
@@ -79,6 +83,7 @@ class ActionConfig(TaskConfig):
         super().__init__(
             type=type,
             task=task,
+            source=source,
             params=params,
             prompt_dict=prompt_dict,
             function_dict=function_dict
@@ -90,6 +95,7 @@ class ConditionConfig(TaskConfig):
         self,
         type: Union[str, TaskType],
         task: str,
+        source: str = None,
         params: dict = {},
         *,
         prompt_dict: Dict[str, PromptConfig] = None,
@@ -98,6 +104,7 @@ class ConditionConfig(TaskConfig):
         super().__init__(
             type=type,
             task=task,
+            source=source,
             params=params,
             prompt_dict=prompt_dict,
             function_dict=function_dict
@@ -219,13 +226,13 @@ class RailFlowConfig:
 
         _name = 'actions'
         actions = {
-            _name: ActionConfig(**_config, prompt_dict=prompts)#, function_dict=functions)
+            _name: ActionConfig(**_config, prompt_dict=prompts, function_dict=functions)
             for _name, _config in config[_name].items()
         } if config.get(_name) else {}
 
         _name = 'conditions'
         conditions = {
-            _name: ConditionConfig(**_config, prompt_dict=prompts)#, function_dict=functions)
+            _name: ConditionConfig(**_config, prompt_dict=prompts, function_dict=functions)
             for _name, _config in config[_name].items()
         } if config.get(_name) else {}
 

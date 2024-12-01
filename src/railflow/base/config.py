@@ -192,7 +192,7 @@ class RailConfig:
 @dataclass
 class RailFlowConfig:
     prompts: List[PromptConfig]
-    # functions: List[FunctionConfig]
+    functions: List[FunctionConfig]
     actions: List[ActionConfig]
     conditions: List[ConditionConfig]
     flows: List[FlowConfig]
@@ -211,9 +211,9 @@ class RailFlowConfig:
         prompts = {_name: PromptConfig(**_config) for _name, _config in config[_name].items()} \
             if config.get(_name) else {}
 
-        # _name = 'functions'
-        # functions = {_name: FunctionConfig(**_config) for _name, _config in config[_name].items()} \
-        #     if config.get(_name) else {}
+        _name = 'functions'
+        functions = {_name: FunctionConfig(**_config) for _name, _config in config[_name].items()} \
+            if config.get(_name) else {}
 
         _name = 'actions'
         actions = {
@@ -246,7 +246,7 @@ class RailFlowConfig:
 
         return cls(
             prompts=prompts,
-            # functions=functions,
+            functions=functions,
             actions=actions,
             conditions=conditions,
             flows=flows,

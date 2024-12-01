@@ -10,13 +10,15 @@ DEFAULT_CONDITION = 'True'
 
 @dataclass
 class PromptConfig:
-    task: str
-    params: dict = field(default_factory=dict)
+    task   :str
+    source :str  = None
+    params :dict = field(default_factory=dict)
 
 @dataclass
 class FunctionConfig:
-    task: str
-    params: dict = field(default_factory=dict)
+    task   :str
+    source :str = None
+    params :dict = field(default_factory=dict)
 
 @dataclass
 class TaskType:

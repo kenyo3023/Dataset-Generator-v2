@@ -234,7 +234,7 @@ class RailFlowConfig:
                 action_dict=actions,
                 condition_dict=conditions,
             ) for _name, _config in config[_name].items()
-        }
+        } if config.get(_name) else {}
 
         _name = 'rails'
         rails = RailConfig.from_dict(
@@ -242,7 +242,7 @@ class RailFlowConfig:
             action_dict=actions,
             condition_dict=conditions,
             flow_dict=flows,
-        )
+        ) if config.get(_name) else {}
 
         return cls(
             prompts=prompts,
